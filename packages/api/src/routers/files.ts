@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { db, eq, and } from '@notion-base/db'
-import { files } from '@notion-base/db/schema'
-import { workspaceProcedure, router } from '../trpc'
+import { db, eq, and, desc, files } from '@notion-base/db'
+import { workspaceProcedure, router } from '../trpc.js'
 
 export const filesRouter = router({
   // Get upload URL (presigned S3/R2)

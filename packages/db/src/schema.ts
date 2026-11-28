@@ -9,13 +9,12 @@ import {
   index,
   uniqueIndex,
   primaryKey,
-  foreignKey,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
-import type { BlockType, RichText } from '@notion-base/shared'
+import type { RichText } from '@notion-base/shared'
 
 // ============================================
-// Users & Workspaces
+// Users & Workspaces (no circular refs)
 // ============================================
 
 export const users = pgTable('users', {
@@ -48,13 +47,13 @@ export const workspaceMembers = pgTable('workspace_members', {
 }))
 
 // ============================================
-// Pages
+// Pages (self-referencing)
 // ============================================
 
 export const pages = pgTable('pages', {
   id: uuid('id').primaryKey().defaultRandom(),
   workspace_id: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
-  parent_id: uuid('parent_id').references(() => pages.id, { onDelete: 'set null' }),
+  parent_id: uuid('parent_id'),
   created_by: uuid('created_by').notNull().references(() => users.id),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -73,6 +72,9 @@ export const pages = pgTable('pages', {
   slugIdx: uniqueIndex('pages_slug_unique').on(t.slug),
 }))
 
+// Self-referencing foreign key added after table creation
+// pages.parent_id references pages.id
+
 // ============================================
 // Blocks
 // ============================================
@@ -87,7 +89,7 @@ export const blocks = pgTable('blocks', {
     'table', 'table_row', 'database', 'database_view',
     'synced_block', 'link_preview', 'breadcrumb', 'table_of_contents', 'equation',
   ] }).notNull(),
-  parent_id: uuid('parent_id').notNull(), // page_id or block_id
+  parent_id: uuid('parent_id').notNull(),
   workspace_id: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   created_by: uuid('created_by').notNull().references(() => users.id),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -117,7 +119,7 @@ export const databases = pgTable('databases', {
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   title: jsonb('title').$type<RichText[]>().notNull().default([]),
   description: jsonb('description').$type<RichText[]>().notNull().default([]),
-  properties: jsonb('properties').notNull(), // Record<string, DatabaseProperty>
+  properties: jsonb('properties').notNull(),
   default_view_id: text('default_view_id'),
   views: jsonb('views').notNull().default([]),
 }, (t) => ({
@@ -126,7 +128,7 @@ export const databases = pgTable('databases', {
 }))
 
 // ============================================
-// Database Rows (entries)
+// Database Rows
 // ============================================
 
 export const databaseRows = pgTable('database_rows', {
@@ -135,14 +137,14 @@ export const databaseRows = pgTable('database_rows', {
   created_by: uuid('created_by').notNull().references(() => users.id),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  properties: jsonb('properties').notNull(), // property_id -> value
+  properties: jsonb('properties').notNull(),
 }, (t) => ({
   databaseIdx: index('database_rows_database_idx').on(t.database_id),
   createdByIdx: index('database_rows_created_by_idx').on(t.created_by),
 }))
 
 // ============================================
-// Files / Assets
+// Files
 // ============================================
 
 export const files = pgTable('files', {
@@ -153,25 +155,25 @@ export const files = pgTable('files', {
   filename: text('filename').notNull(),
   mime_type: text('mime_type').notNull(),
   size: integer('size').notNull(),
-  url: text('url').notNull(), // S3/R2 signed URL or CDN
+  url: text('url').notNull(),
   metadata: jsonb('metadata'),
 })
 
 // ============================================
-// Comments
+// Comments (self-referencing)
 // ============================================
 
 export const comments = pgTable('comments', {
   id: uuid('id').primaryKey().defaultRandom(),
   workspace_id: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
-  block_id: uuid('block_id').references(() => blocks.id, { onDelete: 'cascade' }),
-  page_id: uuid('page_id').references(() => pages.id, { onDelete: 'cascade' }),
+  block_id: uuid('block_id'),
+  page_id: uuid('page_id'),
   created_by: uuid('created_by').notNull().references(() => users.id),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  content: jsonb('content').notNull(), // RichText[]
+  content: jsonb('content').notNull(),
   resolved: boolean('resolved').notNull().default(false),
-  parent_comment_id: uuid('parent_comment_id').references(() => comments.id, { onDelete: 'cascade' }),
+  parent_comment_id: uuid('parent_comment_id'),
 }, (t) => ({
   blockIdx: index('comments_block_idx').on(t.block_id),
   pageIdx: index('comments_page_idx').on(t.page_id),

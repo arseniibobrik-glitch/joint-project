@@ -4,7 +4,7 @@ import * as Y from 'yjs'
 import { setupWSConnection } from 'y-websocket/bin/utils'
 import { auth } from '@notion-base/auth'
 import { db } from '@notion-base/db'
-import { workspaces, workspaceMembers } from '@notion-base/db/schema'
+import { workspaceMembers } from '@notion-base/db'
 import { eq, and } from '@notion-base/db'
 
 // In-memory document store (use Redis in production)
@@ -48,9 +48,10 @@ wss.on('connection', async (ws: WebSocket, req) => {
   const url = new URL(req.url!, `http://${req.headers.host}`)
   const token = url.searchParams.get('token')
   const docName = url.searchParams.get('doc') // e.g., "page:uuid" or "database:uuid"
+  const workspaceId = url.searchParams.get('workspaceId')
 
-  if (!token || !docName) {
-    ws.close(4001, 'Missing token or doc parameter')
+  if (!token || !docName || !workspaceId) {
+    ws.close(4001, 'Missing token, doc, or workspaceId parameter')
     return
   }
 
@@ -61,11 +62,10 @@ wss.on('connection', async (ws: WebSocket, req) => {
   }
 
   // Verify workspace access
-  const [, docId] = docName.split(':')
   const membership = await db.query.workspaceMembers.findFirst({
     where: and(
       eq(workspaceMembers.user_id, session.user.id),
-      eq(workspaceMembers.workspace_id, session.session.activeWorkspaceId!)
+      eq(workspaceMembers.workspace_id, workspaceId)
     ),
   })
 
@@ -80,7 +80,7 @@ wss.on('connection', async (ws: WebSocket, req) => {
   ;(ws as any).user = {
     id: session.user.id,
     name: session.user.name ?? 'Anonymous',
-    avatar: session.user.avatar_url,
+    avatar: session.user.image,
   }
 
   setupWSConnection(ws, req, { doc, gc: true })
@@ -90,7 +90,7 @@ const PORT = Number(process.env.REALTIME_PORT ?? 3001)
 
 server.listen(PORT, () => {
   console.log(`🔄 Realtime server running on ws://localhost:${PORT}/ws`)
-  console.log(`   Connect with: ws://localhost:${PORT}/ws?token=<session>&doc=page:<pageId>`)
+  console.log(`   Connect with: ws://localhost:${PORT}/ws?token=<session>&doc=page:<pageId>&workspaceId=<workspaceId>`)
 })
 
 // Graceful shutdown

@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { db, eq, and, desc, asc, sql, inArray } from '@notion-base/db'
-import { databases, databaseRows, pages } from '@notion-base/db/schema'
-import { workspaceProcedure, router } from '../trpc'
+import { db, eq, and, desc, asc, sql, inArray, databases, databaseRows, pages } from '@notion-base/db'
+import { workspaceProcedure, router } from '../trpc.js'
 import { DatabaseSchema, DatabasePropertySchema, DatabaseRowSchema, QueryDatabaseInputSchema } from '@notion-base/shared'
 
 export const databasesRouter = router({
@@ -42,7 +41,8 @@ export const databasesRouter = router({
         offset: input.offset,
       })
 
-      const total = await db.$count(databaseRows, eq(databaseRows.database_id, input.id))
+      const totalResult = await db.select({ count: sql`count(*)` }).from(databaseRows).where(eq(databaseRows.database_id, input.id))
+      const total = Number(totalResult[0]?.count ?? 0)
 
       return { database, rows, total, hasMore: input.offset + rows.length < total }
     }),
@@ -69,7 +69,7 @@ export const databasesRouter = router({
   update: workspaceProcedure
     .input(DatabaseSchema.partial().required({ id: true }))
     .mutation(async ({ input, ctx }) => {
-      const { id, ...data } = input
+      const { id, created_at, ...data } = input
 
       const existing = await db.query.databases.findFirst({
         where: and(eq(databases.id, id), eq(databases.workspace_id, ctx.workspaceId)),

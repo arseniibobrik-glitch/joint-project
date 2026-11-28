@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "declarationDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@notion-base/shared": ["../shared/src"],
+      "@notion-base/db": ["../db/src"]
+    }
+  },
+  "include": ["src/**/*"],
+  "references": [{ "path": "../shared" }, { "path": "../db" }]
+}

@@ -1,8 +1,8 @@
 import { betterAuth } from 'better-auth'
-import { db } from '@notion-base/db'
-import { users, workspaces, workspaceMembers } from '@notion-base/db/schema'
+import { db, users, workspaces, workspaceMembers } from '@notion-base/db'
 
-export const auth = betterAuth({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const auth: any = betterAuth({
   database: db,
   emailAndPassword: {
     enabled: true,
@@ -27,15 +27,14 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // 1 day
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
   },
   hooks: {
     after: [
       {
-        matcher: (ctx) => ctx.path === '/sign-up/email',
-        handler: async (ctx) => {
-          // Create personal workspace for new user
+        matcher: (ctx: { path: string }) => ctx.path === '/sign-up/email',
+        handler: async (ctx: { returned: { user: { id: string; name: string | null; email: string } } }) => {
           const user = ctx.returned.user
           const workspace = await db.insert(workspaces).values({
             name: `${user.name ?? user.email.split('@')[0]}'s Workspace`,
@@ -53,5 +52,20 @@ export const auth = betterAuth({
   },
 })
 
-export type Session = typeof auth.$Infer.Session
-export type User = typeof auth.$Infer.User
+export type Session = {
+  id: string
+  userId: string
+  expiresAt: Date
+  ipAddress?: string | null
+  userAgent?: string | null
+}
+
+export type User = {
+  id: string
+  email: string
+  emailVerified: boolean
+  name: string
+  createdAt: Date
+  updatedAt: Date
+  image?: string | null
+}

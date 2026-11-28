@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { db, eq, and } from '@notion-base/db'
-import { workspaces, workspaceMembers, users } from '@notion-base/db/schema'
-import { workspaceProcedure, router, protectedProcedure } from '../trpc'
+import { db, eq, and, workspaces, workspaceMembers, users } from '@notion-base/db'
+import { workspaceProcedure, router, protectedProcedure } from '../trpc.js'
 
 export const workspacesRouter = router({
   // Get current user's workspaces
@@ -116,7 +115,9 @@ export const workspacesRouter = router({
       if (!member) throw new Error('MEMBER_NOT_FOUND')
 
       // Prevent demoting last owner
-      if (member.role === 'owner' && input.role !== 'owner') {
+      // input.role is 'admin' | 'member' | 'guest' - never 'owner'
+      // So if member is owner, we're always demoting them
+      if (member.role === 'owner') {
         const owners = await db.query.workspaceMembers.findMany({
           where: and(
             eq(workspaceMembers.workspace_id, ctx.workspaceId),

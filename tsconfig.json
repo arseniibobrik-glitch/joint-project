@@ -9,17 +9,16 @@
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
-    "noEmit": true,
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@notion-base/shared": ["packages/shared/src"],
-      "@notion-base/db": ["packages/db/src"],
-      "@notion-base/api": ["packages/api/src"],
-      "@notion-base/realtime": ["packages/realtime/src"],
-      "@notion-base/auth": ["packages/auth/src"]
-    }
+    "composite": true
   },
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/db" },
+    { "path": "./packages/auth" },
+    { "path": "./packages/api" },
+    { "path": "./packages/realtime" }
+  ],
   "exclude": ["node_modules", "dist"]
 }

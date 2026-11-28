@@ -1,20 +1,27 @@
 import { initTRPC } from '@trpc/server'
 import { ZodError } from 'zod'
 import { auth } from '@notion-base/auth'
-import type { Session, User } from '@notion-base/auth'
+import type { FastifyRequest, FastifyReply } from 'fastify'
 
 export interface Context {
-  session: Session | null
-  user: User | null
+  session: { id: string; userId: string; expiresAt: Date } | null
+  user: { id: string; email: string; name: string | null } | null
   workspaceId: string | null
 }
 
-export const createContext = async (opts: { headers: Headers }): Promise<Context> => {
-  const session = await auth.api.getSession({ headers: opts.headers })
+export const createContext = async (opts: { req: FastifyRequest; res: FastifyReply }): Promise<Context> => {
+  const headers = new Headers()
+  for (const [key, value] of Object.entries(opts.req.headers)) {
+    if (typeof value === 'string') headers.set(key, value)
+    else if (Array.isArray(value)) headers.set(key, value[0])
+  }
+  const session = await auth.api.getSession({ headers })
+  // Get workspace from header
+  const workspaceId = headers.get('x-workspace-id') ?? null
   return {
     session: session?.session ?? null,
     user: session?.user ?? null,
-    workspaceId: session?.session?.activeWorkspaceId ?? null,
+    workspaceId,
   }
 }
 

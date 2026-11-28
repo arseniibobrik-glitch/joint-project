@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { db, eq, and, desc, asc, sql } from '@notion-base/db'
-import { pages } from '@notion-base/db/schema'
-import { workspaceProcedure, router } from '../trpc'
+import { db, eq, and, asc, inArray, pages, blocks } from '@notion-base/db'
+import { workspaceProcedure, router } from '../trpc.js'
 import { CreatePageInputSchema, PageSchema } from '@notion-base/shared'
 
 export const pagesRouter = router({
@@ -76,7 +75,7 @@ export const pagesRouter = router({
   update: workspaceProcedure
     .input(PageSchema.partial().required({ id: true }))
     .mutation(async ({ input, ctx }) => {
-      const { id, ...data } = input
+      const { id, created_at, ...data } = input
 
       const existing = await db.query.pages.findFirst({
         where: and(eq(pages.id, id), eq(pages.workspace_id, ctx.workspaceId)),
@@ -196,17 +195,17 @@ async function getDescendantPageIds(db: any, pageId: string, workspaceId: string
   return allIds
 }
 
-async function isDescendant(db: any, ancestorId: string, descendantId: string, workspaceId: string): Promise<boolean> {
+async function isDescendant(dbInstance: typeof db, ancestorId: string, descendantId: string, workspaceId: string): Promise<boolean> {
   let currentId: string | null = descendantId
   while (currentId) {
     if (currentId === ancestorId) return true
-    const page = await db.query.pages.findFirst({
+    const page: { parent_id: string | null } | undefined = await dbInstance.query.pages.findFirst({
       where: and(eq(pages.id, currentId), eq(pages.workspace_id, workspaceId)),
+      columns: { parent_id: true },
     })
     currentId = page?.parent_id ?? null
   }
   return false
 }
 
-// Import blocks for duplicate
-import { blocks } from '@notion-base/db/schema'
+// blocks imported above

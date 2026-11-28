@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { db, eq, and, desc, asc, sql, inArray } from '@notion-base/db'
-import { blocks, pages } from '@notion-base/db/schema'
-import { workspaceProcedure, router } from '../trpc'
+import { db, eq, and, desc, asc, sql, inArray, blocks, pages } from '@notion-base/db'
+import { workspaceProcedure, router } from '../trpc.js'
 import {
   CreateBlockInputSchema,
   UpdateBlockInputSchema,

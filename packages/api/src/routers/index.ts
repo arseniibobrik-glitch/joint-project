@@ -1,8 +1,8 @@
-import { router } from '../trpc'
-import { blocksRouter } from './blocks'
-import { pagesRouter } from './pages'
-import { databasesRouter } from './databases'
-import { workspacesRouter } from './workspaces'
+import { router } from '../trpc.js'
+import { blocksRouter } from './blocks.js'
+import { pagesRouter } from './pages.js'
+import { databasesRouter } from './databases.js'
+import { workspacesRouter } from './workspaces.js'
 
 export const appRouter = router({
   blocks: blocksRouter,

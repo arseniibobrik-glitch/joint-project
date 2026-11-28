@@ -1,8 +1,8 @@
 import Fastify from 'fastify'
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify'
 import cors from '@fastify/cors'
-import { appRouter } from './routers'
-import { createContext } from './trpc'
+import { appRouter } from './routers/index.js'
+import { createContext } from './trpc.js'
 import { auth } from '@notion-base/auth'
 
 const server = Fastify({ logger: true })
